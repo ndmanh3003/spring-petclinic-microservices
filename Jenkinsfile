@@ -1,59 +1,89 @@
 pipeline {
     agent any
+
     environment {
-        CHANGED_FILES = ''
+        MOD_FILES = ''
     }
+
     stages {
-        stage('Checkout Code') {
+        stage('Detect Changes') {
             steps {
                 script {
-                    def branchToCheckout = env.BRANCH_NAME ?: 'main'
-                    echo "Checkout branch: ${branchToCheckout}"
-                    git branch: branchToCheckout, 
-                        url: 'https://github.com/ndmanh3003/spring-petclinic-microservices.git'
-                }
-            }
-        }
+                    def services = [] // Danh sách service thay đổi
+                    MOD_FILES = sh(script: 'git diff --name-only HEAD~1', returnStdout: true).trim()
+                    echo "🔍 Modified files: ${MOD_FILES}"
 
-        stage('Detect changes') {
-            steps {
-                script {
-                    CHANGED_FILES = sh(script: "git diff --name-only HEAD~1", returnStdout: true).trim()
-                    echo "Changed files:\n${CHANGED_FILES}"
-                }
-            }
-        }
-
-        stage('Test & Build Changed Services') {
-            steps {
-                script {
-                    def services = [
-                        'spring-petclinic-customers-service',
-                        'spring-petclinic-genai-service',
-                        'spring-petclinic-vets-service',
-                        'spring-petclinic-visits-service'
-                    ]
-
-                    for (service in services) {
-                        if (CHANGED_FILES.contains(service)) {
-                            echo "Building and testing ${service}..."
-                            dir(service) {
-                                sh '../mvnw clean test'
-                                sh '../mvnw clean install -DskipTests'
+                    MOD_FILES.split("\n").each { file ->
+                        if (file.startsWith("spring-petclinic-") && file.split("/").size() > 1) {
+                            def svc = file.split("/")[0]
+                            if (!services.contains(svc)) {
+                                services << svc
                             }
-                        } else {
-                            echo "Skipping ${service}, no changes detected."
+                        }
+                    }
+
+                    if (services.isEmpty()) {
+                        echo "✅ No changes detected, skipping."
+                        currentBuild.result = 'SUCCESS'
+                        return
+                    }
+
+                    echo "⚙️ Affected services: ${services}"
+                    env.SERVICES = services.join(',') // Lưu danh sách service thay đổi
+                }
+            }
+        }
+
+        stage('Test & Coverage') {
+            when {
+                expression { return env.SERVICES != null && env.SERVICES != "" }
+            }
+            steps {
+                script {
+                    def services = env.SERVICES.split(',')
+                    services.each { svc ->
+                        echo "🧪 Testing: ${svc}"
+                        dir(svc) {
+                            sh '../mvnw clean test'
+                            sh '../mvnw jacoco:report'
+                        }
+                    }
+                }
+            }
+            post {
+                always {
+                    junit '**/target/surefire-reports/*.xml'
+                    script {
+                        def services = env.SERVICES.split(',')
+                        services.each { svc ->
+                            echo "📊 Generating JaCoCo for: ${svc}"
+                            jacoco(
+                                execPattern: "${svc}/target/jacoco.exec",
+                                classPattern: "${svc}/target/classes",
+                                sourcePattern: "${svc}/src/main/java",
+                                exclusionPattern: "${svc}/src/test/**",
+                                minimumLineCoverage: '70',
+                                changeBuildStatus: true
+                            )
                         }
                     }
                 }
             }
         }
 
-        stage('Check Changed Files') {
+        stage('Build') {
+            when {
+                expression { return env.SERVICES != null && env.SERVICES != "" }
+            }
             steps {
                 script {
-                    def changedFiles = sh(script: "git diff --name-only HEAD~1", returnStdout: true).trim()
-                    echo "Files changed in this commit: ${changedFiles}"
+                    def services = env.SERVICES.split(',')
+                    services.each { svc ->
+                        echo "🔨 Building: ${svc}"
+                        dir(svc) {
+                            sh '../mvnw clean package -DskipTests'
+                        }
+                    }
                 }
             }
         }
@@ -63,7 +93,7 @@ pipeline {
         success {
             script {
                 def commitId = env.GIT_COMMIT
-                echo "Sending 'success' status to GitHub for commit: ${commitId}"
+                echo "✅ Sending 'success' to GitHub: ${commitId}"
                 def response = httpRequest(
                     url: "https://api.github.com/repos/ndmanh3003/spring-petclinic-microservices/statuses/${commitId}",
                     httpMode: 'POST',
@@ -76,14 +106,14 @@ pipeline {
                     }""",
                     authentication: 'github-token'
                 )
-                echo "GitHub Response: ${response.status}"
+                echo "📡 GitHub Response: ${response.status}"
             }
         }
 
         failure {
             script {
                 def commitId = env.GIT_COMMIT
-                echo "Sending 'failure' status to GitHub for commit: ${commitId}"
+                echo "❌ Sending 'failure' to GitHub: ${commitId}"
                 def response = httpRequest(
                     url: "https://api.github.com/repos/ndmanh3003/spring-petclinic-microservices/statuses/${commitId}",
                     httpMode: 'POST',
@@ -96,12 +126,12 @@ pipeline {
                     }""",
                     authentication: 'github-token'
                 )
-                echo "GitHub Response: ${response.status}"
+                echo "📡 GitHub Response: ${response.status}"
             }
         }
 
         always {
-            echo "Pipeline finished."
+            echo "🔚 Pipeline execution complete."
         }
     }
 }
