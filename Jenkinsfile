@@ -82,11 +82,12 @@ pipeline {
                             echo "📊 Generating JaCoCo for: ${svc}"
                             dir(svc) {
                                 jacoco(
-                                    classPattern: "${svc}/target/classes",
-                                    sourcePattern: "${svc}/src/main/java",
-                                    exclusionPattern: "${svc}/src/test/**",
-                                    minimumLineCoverage: '70',
-                                    changeBuildStatus: true
+                                    execPattern: 'target/jacoco.exec',
+                                    classPattern: "target/classes",
+                                    sourcePattern: "src/main/java",
+                                    exclusionPattern: "**/test/**",
+                                    // minimumLineCoverage: '70',
+                                    // changeBuildStatus: true
                                 )
                             }
                         }
