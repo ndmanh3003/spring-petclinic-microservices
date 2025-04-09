@@ -66,6 +66,7 @@ pipeline {
                                 def total = missed.toInteger() + covered.toInteger()
                                 def coveragePercent = (total > 0) ? (covered.toInteger() * 100 / total) : 0
 
+                                echo "111 -- ${coveragePercent}"
                                 echo "🚀 Test coverage for ${service}: ${coveragePercent}%"
 
                                 if (coveragePercent < 70) {
