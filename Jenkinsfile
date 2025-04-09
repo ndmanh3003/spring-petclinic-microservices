@@ -86,8 +86,8 @@ pipeline {
                                     classPattern: "target/classes",
                                     sourcePattern: "src/main/java",
                                     exclusionPattern: "**/test/**",
-                                    // minimumLineCoverage: '70',
-                                    // changeBuildStatus: true
+                                    minimumLineCoverage: '70',
+                                    changeBuildStatus: true
                                 )
                             }
                         }
@@ -96,22 +96,22 @@ pipeline {
             }
         }
 
-        // stage('Build') {
-        //     when {
-        //         expression { return env.SERVICES != null && env.SERVICES != "" }
-        //     }
-        //     steps {
-        //         script {
-        //             def services = env.SERVICES.split(',')
-        //             services.each { svc ->
-        //                 echo "🔨 Building: ${svc}"
-        //                 dir(svc) {
-        //                     sh '../mvnw clean package -DskipTests'
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
+        stage('Build') {
+            when {
+                expression { return env.SERVICES != null && env.SERVICES != "" }
+            }
+            steps {
+                script {
+                    def services = env.SERVICES.split(',')
+                    services.each { svc ->
+                        echo "🔨 Building: ${svc}"
+                        dir(svc) {
+                            sh '../mvnw clean package -DskipTests -T 1C'
+                        }
+                    }
+                }
+            }
+        }
     }
 
     post {
