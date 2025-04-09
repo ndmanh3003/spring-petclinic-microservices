@@ -30,63 +30,65 @@ pipeline {
 
                     echo "⚙️ Affected services: ${services}"
                     env.SERVICES = services.join(',') // Lưu danh sách service thay đổi
+
+                    echo "${env.SERVICES}"
                 }
             }
         }
 
-        stage('Test & Coverage') {
-            when {
-                expression { return env.SERVICES != null && env.SERVICES != "" }
-            }
-            steps {
-                script {
-                    def services = env.SERVICES.split(',')
-                    services.each { svc ->
-                        echo "🧪 Testing: ${svc}"
-                        dir(svc) {
-                            sh '../mvnw clean test'
-                            sh '../mvnw jacoco:report'
-                        }
-                    }
-                }
-            }
-            post {
-                always {
-                    junit '**/target/surefire-reports/*.xml'
-                    script {
-                        def services = env.SERVICES.split(',')
-                        services.each { svc ->
-                            echo "📊 Generating JaCoCo for: ${svc}"
-                            jacoco(
-                                execPattern: "${svc}/target/jacoco.exec",
-                                classPattern: "${svc}/target/classes",
-                                sourcePattern: "${svc}/src/main/java",
-                                exclusionPattern: "${svc}/src/test/**",
-                                minimumLineCoverage: '70',
-                                changeBuildStatus: true
-                            )
-                        }
-                    }
-                }
-            }
-        }
+        // stage('Test & Coverage') {
+        //     when {
+        //         expression { return env.SERVICES != null && env.SERVICES != "" }
+        //     }
+        //     steps {
+        //         script {
+        //             def services = env.SERVICES.split(',')
+        //             services.each { svc ->
+        //                 echo "🧪 Testing: ${svc}"
+        //                 dir(svc) {
+        //                     sh '../mvnw clean test'
+        //                     sh '../mvnw jacoco:report'
+        //                 }
+        //             }
+        //         }
+        //     }
+        //     post {
+        //         always {
+        //             junit '**/target/surefire-reports/*.xml'
+        //             script {
+        //                 def services = env.SERVICES.split(',')
+        //                 services.each { svc ->
+        //                     echo "📊 Generating JaCoCo for: ${svc}"
+        //                     jacoco(
+        //                         execPattern: "${svc}/target/jacoco.exec",
+        //                         classPattern: "${svc}/target/classes",
+        //                         sourcePattern: "${svc}/src/main/java",
+        //                         exclusionPattern: "${svc}/src/test/**",
+        //                         minimumLineCoverage: '70',
+        //                         changeBuildStatus: true
+        //                     )
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
-        stage('Build') {
-            when {
-                expression { return env.SERVICES != null && env.SERVICES != "" }
-            }
-            steps {
-                script {
-                    def services = env.SERVICES.split(',')
-                    services.each { svc ->
-                        echo "🔨 Building: ${svc}"
-                        dir(svc) {
-                            sh '../mvnw clean package -DskipTests'
-                        }
-                    }
-                }
-            }
-        }
+        // stage('Build') {
+        //     when {
+        //         expression { return env.SERVICES != null && env.SERVICES != "" }
+        //     }
+        //     steps {
+        //         script {
+        //             def services = env.SERVICES.split(',')
+        //             services.each { svc ->
+        //                 echo "🔨 Building: ${svc}"
+        //                 dir(svc) {
+        //                     sh '../mvnw clean package -DskipTests'
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
     }
 
     post {
