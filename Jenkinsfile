@@ -80,14 +80,14 @@ pipeline {
                         def services = env.SERVICES.split(',')
                         services.each { svc ->
                             echo "📊 Generating JaCoCo for: ${svc}"
-                            jacoco(
-                                execPattern: "${svc}/target/jacoco.exec",
-                                classPattern: "${svc}/target/classes",
-                                sourcePattern: "${svc}/src/main/java",
-                                exclusionPattern: "${svc}/src/test/**",
-                                minimumLineCoverage: '70',
-                                changeBuildStatus: true
-                            )
+                            dir(svc) {
+                                jacoco(
+                                    classPattern: "${svc}/target/classes",
+                                    sourcePattern: "${svc}/src/main/java",
+                                    exclusionPattern: "${svc}/src/test/**",
+                                    minimumLineCoverage: '70',
+                                    changeBuildStatus: true
+                                )
                         }
                     }
                 }
