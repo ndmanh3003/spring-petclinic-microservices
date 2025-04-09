@@ -52,14 +52,16 @@ pipeline {
                                 echo "⚠️ No JaCoCo report found for ${service}."
                             } else {
                                 def missed = sh(
-                                    script: """awk -F 'missed="' '/<counter type="LINE"/ {gsub(/".*/, "", \$2); sum += \$2} END {print sum}' ${jacocoFile}""",
+                                    script: """awk -F'missed="' '/<counter type="LINE"/ {gsub(/".*/, "", \$2); sum += \$2} END {print sum}' ${jacocoFile}""",
                                     returnStdout: true
                                 ).trim()
 
                                 def covered = sh(
-                                    script: """awk -F 'covered="' '/<counter type="LINE"/ {gsub(/".*/, "", \$2); sum += \$2} END {print sum}' ${jacocoFile}""",
+                                    script: """awk -F'covered="' '/<counter type="LINE"/ {gsub(/".*/, "", \$2); sum += \$2} END {print sum}' ${jacocoFile}""",
                                     returnStdout: true
                                 ).trim()
+
+                                echo "22222"
 
                                 def total = missed.toInteger() + covered.toInteger()
                                 def coveragePercent = (total > 0) ? (covered.toInteger() * 100 / total) : 0
