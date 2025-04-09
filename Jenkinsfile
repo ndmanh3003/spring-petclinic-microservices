@@ -61,7 +61,7 @@ pipeline {
                                     returnStdout: true
                                 ).trim()
 
-                                echo "22222"
+                                echo "22222 missed: ${missed}, covered: ${covered}"
 
                                 def total = missed.toInteger() + covered.toInteger()
                                 def coveragePercent = (total > 0) ? (covered.toInteger() * 100 / total) : 0
