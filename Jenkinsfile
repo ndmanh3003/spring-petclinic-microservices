@@ -49,7 +49,7 @@ pipeline {
 
                             echo "1111"
                             if (!jacocoFile) {
-                                echo "⚠️ No JaCoCo report found for ${service}."
+                                echo "⚠️ No JaCoCo report found for ${svc}."
                             } else {
                                 def missed = sh(
                                     script: """awk -F'missed="' '/<counter type="LINE"/ {gsub(/".*/, "", \$2); sum += \$2} END {print sum}' ${jacocoFile}""",
@@ -67,10 +67,10 @@ pipeline {
                                 def coveragePercent = (total > 0) ? (covered.toInteger() * 100 / total) : 0
 
                                 echo "111 -- ${coveragePercent}"
-                                echo "🚀 Test coverage for ${service}: ${coveragePercent}%"
+                                echo "🚀 Test coverage for ${svc}: ${coveragePercent}%"
 
                                 if (coveragePercent < 70) {
-                                    error("❌ Test coverage below 70% for ${service}.")
+                                    error("❌ Test coverage below 70% for ${svc}.")
                                 }
                             }
                         }
