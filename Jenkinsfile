@@ -7,9 +7,10 @@ pipeline {
 
     stages {
         stage('Detect Changes') {
+            agent any
             steps {
                 script {
-                    def services = [] // Danh sách service thay đổi
+                    def services = []
                     MOD_FILES = sh(script: 'git diff --name-only HEAD~1', returnStdout: true).trim()
                     echo "🔍 Modified files: ${MOD_FILES}"
 
@@ -29,12 +30,13 @@ pipeline {
                     }
 
                     echo "⚙️ Affected services: ${services}"
-                    env.SERVICES = services.join(',') // Lưu danh sách service thay đổi
+                    env.SERVICES = services.join(',')
                 }
             }
         }
 
         stage('Test & Coverage') {
+            agent { label 'ser1' }
             when {
                 expression { return env.SERVICES != null && env.SERVICES != "" }
             }
@@ -97,6 +99,7 @@ pipeline {
         }
 
         stage('Build') {
+            agent { label 'ser2' }
             when {
                 expression { return env.SERVICES != null && env.SERVICES != "" }
             }
