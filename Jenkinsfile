@@ -44,31 +44,54 @@ pipeline {
                     services.each { svc ->
                         echo "🧪 Testing: ${svc}"
                         dir(svc) {
-                            sh '../mvnw clean test'
-                            sh '../mvnw jacoco:report'
+                            sh '../mvnw clean verify -PbuildDocker jacoco:report'
+                            def jacocoFile = sh(script: "find target -name jacoco.xml", returnStdout: true).trim()
+
+                            if (!jacocoFile) {
+                                echo "⚠️ No JaCoCo report found for ${service}."
+                            } else {
+                                def missed = sh(
+                                    script: """awk -F 'missed="' '/<counter type="LINE"/ {gsub(/".*/, "", \$2); sum += \$2} END {print sum}' ${jacocoFile}""",
+                                    returnStdout: true
+                                ).trim()
+
+                                def covered = sh(
+                                    script: """awk -F 'covered="' '/<counter type="LINE"/ {gsub(/".*/, "", \$2); sum += \$2} END {print sum}' ${jacocoFile}""",
+                                    returnStdout: true
+                                ).trim()
+
+                                def total = missed.toInteger() + covered.toInteger()
+                                def coveragePercent = (total > 0) ? (covered.toInteger() * 100 / total) : 0
+
+                                echo "🚀 Test coverage for ${service}: ${coveragePercent}%"
+
+                                if (coveragePercent < 70) {
+                                    error("❌ Test coverage below 70% for ${service}.")
+                                }
+                            }
                         }
                     }
                 }
             }
-            post {
-                always {
-                    junit '**/target/surefire-reports/*.xml'
-                    script {
-                        def services = env.SERVICES.split(',')
-                        services.each { svc ->
-                            echo "📊 Generating JaCoCo for: ${svc}"
-                            jacoco(
-                                execPattern: "${svc}/target/jacoco.exec",
-                                classPattern: "${svc}/target/classes",
-                                sourcePattern: "${svc}/src/main/java",
-                                exclusionPattern: "${svc}/src/test/**",
-                                minimumLineCoverage: '70',
-                                changeBuildStatus: true
-                            )
-                        }
-                    }
-                }
-            }
+            // post {
+            //     always {
+            //         junit '**/target/surefire-reports/*.xml'
+            //         script {
+            //             def services = env.SERVICES.split(',')
+            //             services.each { svc ->
+            //                 echo "📊 Generating JaCoCo for: ${svc}"
+            //                 jacoco(
+            //                     execPattern: "${svc}/target/jacoco.exec",
+            //                     classPattern: "${svc}/target/classes",
+            //                     sourcePattern: "${svc}/src/main/java",
+            //                     exclusionPattern: "${svc}/src/test/**",
+            //                     minimumLineCoverage: '70',
+            //                     changeBuildStatus: true
+            //                 )
+            //             }
+            //         }
+            //     }
+            // }
         }
 
         // stage('Build') {
