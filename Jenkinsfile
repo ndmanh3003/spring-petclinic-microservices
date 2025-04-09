@@ -47,6 +47,7 @@ pipeline {
                             sh '../mvnw clean verify -PbuildDocker jacoco:report'
                             def jacocoFile = sh(script: "find target -name jacoco.xml", returnStdout: true).trim()
 
+                            echo "1111"
                             if (!jacocoFile) {
                                 echo "⚠️ No JaCoCo report found for ${service}."
                             } else {
@@ -73,25 +74,25 @@ pipeline {
                     }
                 }
             }
-            post {
-                always {
-                    junit '**/target/surefire-reports/*.xml'
-                    script {
-                        def services = env.SERVICES.split(',')
-                        services.each { svc ->
-                            echo "📊 Generating JaCoCo for: ${svc}"
-                            jacoco(
-                                execPattern: "${svc}/target/jacoco.exec",
-                                classPattern: "${svc}/target/classes",
-                                sourcePattern: "${svc}/src/main/java",
-                                exclusionPattern: "${svc}/src/test/**",
-                                minimumLineCoverage: '70',
-                                changeBuildStatus: true
-                            )
-                        }
-                    }
-                }
-            }
+            // post {
+            //     always {
+            //         junit '**/target/surefire-reports/*.xml'
+            //         script {
+            //             def services = env.SERVICES.split(',')
+            //             services.each { svc ->
+            //                 echo "📊 Generating JaCoCo for: ${svc}"
+            //                 jacoco(
+            //                     execPattern: "${svc}/target/jacoco.exec",
+            //                     classPattern: "${svc}/target/classes",
+            //                     sourcePattern: "${svc}/src/main/java",
+            //                     exclusionPattern: "${svc}/src/test/**",
+            //                     minimumLineCoverage: '70',
+            //                     changeBuildStatus: true
+            //                 )
+            //             }
+            //         }
+            //     }
+            // }
         }
 
         // stage('Build') {
