@@ -88,6 +88,7 @@ pipeline {
                                     minimumLineCoverage: '70',
                                     changeBuildStatus: true
                                 )
+                            }
                         }
                     }
                 }
